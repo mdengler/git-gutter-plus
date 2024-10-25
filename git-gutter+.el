@@ -32,7 +32,7 @@
 (require 'dash)
 (require 'tramp)
 (require 'log-edit)
-(require 'git-commit)
+(require 'magit)
 
 (defgroup git-gutter+ nil
   "Manage Git hunks straight from the buffer"
