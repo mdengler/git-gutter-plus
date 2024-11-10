@@ -52,7 +52,7 @@ calculated width looks wrong. (This can happen with some special characters.)"
   :group 'git-gutter+)
 
 (defcustom git-gutter+-diff-options nil
-  "List of strings containing extra arguments to 'git diff'"
+  "List of strings containing extra arguments to \='git diff\='"
   :type '(repeat (string :tag "Option"))
   :group 'git-gutter+)
 
@@ -120,6 +120,11 @@ calculated width looks wrong. (This can happen with some special characters.)"
 (defcustom git-gutter+-disabled-modes nil
   "A list of modes for which `global-git-gutter+-mode' should be disabled."
   :type '(repeat symbol)
+  :group 'git-gutter+)
+
+(defcustom git-gutter+-commit-fill-column 80
+  "Fill column for commit messages."
+  :type 'natnum
   :group 'git-gutter+)
 
 (defvar git-gutter+-mode-map
@@ -375,7 +380,7 @@ Returns t on zero exit code, nil otherwise."
 ;; `git-gutter+-refresh'.
 
 ;;;###autoload
-(define-minor-mode global-git-gutter+-mode ()
+(define-minor-mode global-git-gutter+-mode
   "Global Git-Gutter mode"
   :group      'git-gutter+
   :init-value nil
@@ -549,7 +554,7 @@ Returns t on zero exit code, nil otherwise."
                   (font-lock-default-function 'diff-mode)
                   (font-lock-default-fontify-buffer)
                   (buffer-string))))
-      (momentary-string-display diff (point-at-bol)))))
+      (momentary-string-display diff (pos-bol)))))
 
 (defun git-gutter+-next-hunk (arg)
   "Move to next diff hunk"
@@ -585,7 +590,7 @@ Returns t on zero exit code, nil otherwise."
           (domain (tramp-file-name-domain vec))
           (host (tramp-file-name-host vec))
           (port (tramp-file-name-port vec)))
-     (tramp-make-tramp-file-name method user domain host port dir)))
+     (tramp-make-tramp-file-name (vector method user domain host port dir))))
 
 (defun git-gutter+-remote-file-path (dir file)
   (let ((file (tramp-file-name-localname (tramp-dissect-file-name file))))
@@ -617,7 +622,9 @@ Returns t on zero exit code, nil otherwise."
 ;;; Staging
 
 (defun git-gutter+-stage-hunks ()
-  "Stage hunk at point. If region is active, stage all hunk lines within the region."
+  "Stage hunk at point.
+
+If region is active, stage all hunk lines within the region."
   (interactive)
   (git-gutter+-stage-hunks-between-lines (when (use-region-p)
                                           (cons (line-number-at-pos (region-beginning))
@@ -916,7 +923,7 @@ If TYPE is not `modified', also remove all deletion (-) lines."
       ;; Updating the modeline has no effect if the buffer still has
       ;; changes - it will remain in the 'modified' state. So skip it then.
       (unless git-gutter+-diffinfos
-        (ignore-errors (vc-find-file-hook))))))
+        (ignore-errors (vc-refresh-state))))))
 
 (defun git-gutter+-stage-whole-buffer ()
   (git-gutter+-stage-hunks-between-lines (cons (line-number-at-pos (point-min))
@@ -934,7 +941,7 @@ If TYPE is not `modified', also remove all deletion (-) lines."
 
 (defun git-gutter+-commit-toggle-amending ()
   "Toggle whether this will be an amendment to the previous commit.
-\(i.e., whether commit is run via 'git commit --amend')"
+\(i.e., whether commit is run via \='git commit --amend\=')"
   (interactive)
   ;; Remove the newline that 'git-commit-mode' adds to a new commit
   ;; message buffer by default. This prevents an ugly visual
@@ -955,7 +962,7 @@ If TYPE is not `modified', also remove all deletion (-) lines."
 
 (defun git-gutter+-commit-toggle-allow-empty ()
   "Toggle whether this commit is allowed to be empty.
-\(i.e., whether commit is run via 'git commit --allow-empty')"
+\(i.e., whether commit is run via \='git commit --allow-empty\=')"
   (interactive)
   (git-gutter+-commit-toggle-field 'allow-empty t))
 
@@ -1074,10 +1081,10 @@ set remove it."
   ;; The following is copied from `git-commit-mode'.
   ;; Directly deriving from `git-commit-mode' would pull in unwanted setup code
   ;; that's incompatible with `git-gutter+-commit-mode'.
-  (setq font-lock-defaults (list git-commit-font-lock-keywords-2 t))
+  (setq font-lock-defaults (list git-commit-font-lock-keywords t))
   (set (make-local-variable 'font-lock-multiline) t)
   (git-commit-propertize-diff)
-  (setq fill-column git-commit-fill-column)
+  (setq fill-column git-gutter+-commit-fill-column)
   ;; Recognize changelog-style paragraphs
   (set (make-local-variable 'paragraph-start)
        (concat paragraph-start "\\|*\\|("))
@@ -1136,7 +1143,7 @@ set remove it."
 (defun git-gutter+-commit-font-lock-keywords ()
   "Like `git-commit-mode-font-lock-keywords' but with commit header highlighting"
   `((,(concat "\\`" git-gutter+-commit-header-regex) . 'git-gutter+-commit-header-face)
-    ,@(git-commit-mode-font-lock-keywords)))
+    ,@git-commit-font-lock-keywords))
 
 
 ;;; Magit synchronization
