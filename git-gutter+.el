@@ -195,7 +195,7 @@ Returns t on zero exit code, nil otherwise."
 
 (defun git-gutter+-diff (curfile)
   (let ((args (git-gutter+-diff-args curfile))
-        (file (buffer-file-name))) ;; for tramp
+        (file (buffer-file-name (buffer-base-buffer)))) ;; for tramp
     (with-temp-buffer
       (if (git-gutter+-insert-git-output args file)
           (progn (goto-char (point-min))
@@ -325,7 +325,7 @@ Returns t on zero exit code, nil otherwise."
     (set-window-margins curwin width (cdr (window-margins curwin)))))
 
 (defsubst git-gutter+-file-buffer-p ()
-  (and (buffer-file-name)
+  (and (buffer-file-name (buffer-base-buffer))
        default-directory
        (file-directory-p default-directory)))
 
@@ -338,13 +338,13 @@ Returns t on zero exit code, nil otherwise."
   :lighter    git-gutter+-lighter
   (if git-gutter+-mode
       (if (and (git-gutter+-file-buffer-p)
-               (not (file-symlink-p (buffer-file-name)))
-               (git-gutter+-in-git-repository-p (buffer-file-name)))
+               (not (file-symlink-p (buffer-file-name (buffer-base-buffer))))
+               (git-gutter+-in-git-repository-p (buffer-file-name (buffer-base-buffer))))
           (progn
             (git-gutter+-add-local-hooks)
             (git-gutter+-refresh))
         (if (called-interactively-p 'any)
-            (message (if (and (buffer-file-name) (file-symlink-p (buffer-file-name)))
+            (message (if (and (buffer-file-name (buffer-base-buffer)) (file-symlink-p (buffer-file-name (buffer-base-buffer))))
                          "Symlinked files are not supported by Git-Gutter+"
                        "No Git repo for current buffer")))
         (git-gutter+-mode -1))
@@ -398,7 +398,7 @@ Returns t on zero exit code, nil otherwise."
     (git-gutter+-in-all-buffers (git-gutter+-turn-off))))
 
 (defun git-gutter+-turn-on ()
-  (when (and (buffer-file-name)
+  (when (and (buffer-file-name (buffer-base-buffer))
              (not (memq major-mode git-gutter+-disabled-modes))
              (not git-gutter+-mode))
     (git-gutter+-mode t)))
@@ -620,7 +620,7 @@ Returns t on zero exit code, nil otherwise."
 
 (defun git-gutter+-refresh ()
   (git-gutter+-clear)
-  (let ((file (buffer-file-name)))
+  (let ((file (buffer-file-name (buffer-base-buffer))))
     (when (and file (file-exists-p file))
       (if (file-remote-p file)
           (let* ((repo-root (git-gutter+-root-directory file))
@@ -825,7 +825,7 @@ If TYPE is not `modified', also remove all deletion (-) lines."
              (y-or-n-p "Nothing staged. Stage current buffer? "))
     (git-gutter+-stage-whole-buffer))
 
-  (let ((file (buffer-file-name))
+  (let ((file (buffer-file-name (buffer-base-buffer)))
         (dir default-directory))
     (git-gutter+-save-window-config-if-needed)
     (setq git-gutter+-commit-origin-buffer (current-buffer))
